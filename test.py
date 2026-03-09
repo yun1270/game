@@ -104,15 +104,15 @@ while True:
 
     now = time.time()
 
-    if state == "ear" and now - state_start_time > 1:
+    if state == "ear" and now - state_start_time > 3:
         current_image = pet_idle
         state = "idle"
 
-    if state == "snack" and now - state_start_time > 1:
+    if state == "snack" and now - state_start_time > 3:
         current_image = pet_idle
         state = "idle"
 
-    if state == "idle" and now - last_click_time > 60:
+    if state == "idle" and now - last_click_time > 10:
         current_image = pet_sleep
         state = "sleep"
 
