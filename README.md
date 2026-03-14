@@ -34,6 +34,23 @@ http://localhost:8000
     - pet_snack : 간식
     - pet_sleep : 60초 방치
 
+행동 시스템
+쓰다듬기 → 호감도 +2
+대화 → 호감도 +1
+간식 → 호감도 +3 (10개 이상 패널티)
+방치 → 호감도 -1
+
+AI 행동
+성격 랜덤 생성
+최근 대화 3~4개 기억
+호감도 기반 말투 변화
+
+UI
+하트 게이지
+레벨 표시
+성격 표시
+말풍선 대화
+
 ---
 
 ### **개발 모드 (Hot Reload)**
@@ -46,26 +63,5 @@ http://localhost:8000
 - static/index.html
 - static/game.js
 - static/assets/*
-
----
-
-### **프로젝트 구조**
-
-```
-.
-├── main.py
-├── pygame.py
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── static
-│   ├── index.html
-│   ├── game.js
-│   └── assets
-│       ├── pet.PNG
-│       ├── pet_ear.PNG
-│       ├── pet_sleep.PNG
-│       └── pet_snack.PNG
-```
 
 ---
