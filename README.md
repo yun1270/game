@@ -1,7 +1,4 @@
 # **Dot Cat**
-## **Docker 웹 버전 실행**
-
-이 버전은 FastAPI 서버와 브라우저 렌더링을 사용하며 컨테이너는 Docker로 실행한다.
 
 ### **1. Docker Compose 실행**
 
@@ -11,15 +8,7 @@
 docker compose up
 ```
 
-처음 실행 시 이미지 빌드가 자동으로 진행된다.
-
-### **2. 모델 다운로드**
-첫 실행 시 한 번만 실행한다.
-```
-docker compose exec ollama ollama pull llama3
-```
-
-### **3. 브라우저 접속**
+### **2. 브라우저 접속**
 
 ```
 http://localhost:8000
