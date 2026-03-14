@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -6,7 +5,8 @@ import os, requests, time, random
 
 app = FastAPI()
 
-OLLAMA_URL = os.getenv("OLLAMA_URL","http://ollama:11434")
+OLLAMA_URL=os.getenv("OLLAMA_URL","http://ollama:11434")
+session=requests.Session()
 
 state="idle"
 snacks=0
@@ -18,98 +18,96 @@ last_chat=0
 state_start=time.time()
 
 personality=random.choice(["tsundere","lazy","friendly"])
-memory=[]
+
+messages=[
+{
+"role":"system",
+"content":"너는 귀여운 집고양이다. 항상 15자 이내로 말한다."
+}
+]
 
 app.mount("/static",StaticFiles(directory="static"),name="static")
+
+
+@app.on_event("startup")
+def warmup():
+    try:
+        session.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={
+                "model":"llama3",
+                "messages":[{"role":"user","content":"hi"}],
+                "keep_alive":"1h",
+                "options":{"num_predict":5}
+            },
+            timeout=10
+        )
+    except:
+        pass
+
 
 @app.get("/")
 def root():
     return FileResponse("static/index.html")
 
-def affection_level():
+
+def mood():
     if affection<30: return "경계"
     if affection<70: return "보통"
     return "애교"
 
-def personality_text():
-    if personality=="tsundere":
-        return "겉으로는 퉁명하지만 사실은 관심이 많다."
-    if personality=="lazy":
-        return "게으르고 귀찮아하지만 은근히 애교 있다."
-    return "사람을 좋아하고 장난기 많다."
-
-def random_behavior():
-    global state,state_start
-    r=random.random()
-    if r<0.03:
-        state="ear"
-        state_start=time.time()
-    elif r<0.06:
-        state="snack"
-        state_start=time.time()
 
 @app.get("/cat")
-def cat_talk(q:str=""):
-    global last_action,last_chat,affection,memory
+def cat(q:str=""):
 
-    last_action=time.time()
+    global affection,last_chat,last_action,messages
+
     last_chat=time.time()
-
-    mood=affection_level()
-
-    history=""
-    for h in memory[-4:]:
-        history+=f"사람:{h[0]}\n고양이:{h[1]}\n"
+    last_action=time.time()
 
     if q:
         affection=min(100,affection+1)
 
-        prompt=f"""
-너는 귀여운 집고양이다.
-성격: {personality_text()}
-호감도: {affection}/100 ({mood})
+        messages.append({
+            "role":"user",
+            "content":q
+        })
 
-대사는 15자 이내.
-
-이전 대화:
-{history}
-
-사람:{q}
-고양이:
-"""
-    else:
-        prompt=f"""
-너는 귀여운 집고양이다.
-성격: {personality_text()}
-호감도: {affection}/100 ({mood})
-
-플레이어에게 짧게 한마디 한다.
-"""
-
-    res=requests.post(
-        f"{OLLAMA_URL}/api/generate",
+    res=session.post(
+        f"{OLLAMA_URL}/api/chat",
         json={
             "model":"llama3",
-            "prompt":prompt,
-            "stream":False
+            "messages":messages[-6:],
+            "stream":False,
+            "keep_alive":"1h",
+            "options":{
+                "num_predict":15,
+                "temperature":0.8
+            }
         }
     )
 
     data=res.json()
 
-    if "response" not in data:
+    if "message" not in data:
         return {"error":data}
 
-    msg=data["response"].strip()
+    msg=data["message"]["content"].strip()
 
-    if q:
-        memory.append((q,msg))
-        memory=memory[-6:]
+    messages.append({
+        "role":"assistant",
+        "content":msg
+    })
 
-    return {"message":msg,"affection":affection}
+    return {
+        "message":msg,
+        "affection":affection
+    }
+
 
 @app.get("/state")
 def get_state():
+
     global state,affection,level
 
     now=time.time()
@@ -124,8 +122,6 @@ def get_state():
         state="sleep"
         affection=max(0,affection-1)
 
-#    random_behavior()
-
     level=1+affection//25
 
     return {
@@ -136,6 +132,7 @@ def get_state():
         "personality":personality
     }
 
+
 @app.post("/pet")
 def pet():
     global state,last_action,state_start,affection
@@ -144,6 +141,7 @@ def pet():
     last_action=time.time()
     state_start=time.time()
     return {"ok":True}
+
 
 @app.post("/snack")
 def snack():
