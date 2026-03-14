@@ -74,7 +74,7 @@ docker compose up
 ### **2. 브라우저 접속**
 
 ```
-http://localhost:8000/static/index.html
+http://localhost:8000
 ```
 
 ### **특징**
