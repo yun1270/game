@@ -47,3 +47,26 @@
     ```bash
     deactivate
     ```
+---
+
+1. 이미지 빌드
+```bash
+docker build -t dotcat-dev .
+```
+
+2. 컨테이너 실행
+```bash
+docker run \
+-p 8000:8000 \
+-v $(pwd):/app \
+dotcat-dev
+```
+---
+
+docker-compose.yml
+```bash
+docker compose up
+```
+---
+
+http://localhost:8000
