@@ -14,6 +14,22 @@ docker compose up
 http://localhost:8000
 ```
 
+### **ollama 버전 변경**
+
+docker-compose.yml 파일 수정
+
+```
+- OLLAMA_MODEL=qwen2:7b
+```
+
+```
+docker compose up --build
+```
+
+```
+docker exec -it ollama ollama pull <변경하는 버전>
+```
+
 ### **특징**
 
 - 고양이 이미지 클릭 → 반응

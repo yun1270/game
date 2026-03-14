@@ -97,7 +97,7 @@ def call_ollama_chat(prompt_messages):
                 "options": {
                     "num_predict": 16,
                     "num_ctx": 768,
-                    "temperature": 0.8,
+                    "temperature": 0.4,
                     "top_k": 20,
                     "repeat_penalty": 1.05
                 }
