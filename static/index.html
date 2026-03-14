@@ -9,25 +9,40 @@
 body{
   font-family:sans-serif;
   background:#f5f6fa;
-  text-align:center;
-  margin:40px;
+  margin:0;
+  padding:40px 20px;
+  color:#333;
 }
 
 h2{
-  margin-bottom:18px;
+  text-align:center;
+  margin:0 0 24px 0;
+}
+
+#app{
+  max-width:760px;
+  margin:0 auto;
+}
+
+#top-layout{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:20px;
+  flex-wrap:wrap;
 }
 
 #game-container{
   position:relative;
   width:300px;
-  margin:auto;
+  flex:0 0 300px;
 }
 
 canvas{
-  border-radius:12px;
+  border-radius:16px;
   border:1px solid #ddd;
   background:white;
-  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+  box-shadow:0 6px 18px rgba(0,0,0,0.06);
 }
 
 #bubble{
@@ -58,24 +73,64 @@ canvas{
   border-color:white transparent transparent transparent;
 }
 
-#ui{
-  margin-top:14px;
+#status-panel{
+  width:240px;
+  background:white;
+  border:1px solid #e8e8e8;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.06);
+  padding:18px 16px;
+  text-align:left;
+}
+
+.status-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:14px;
+}
+
+.status-card{
+  background:#f8f9fd;
+  border:1px solid #eef1f7;
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:10px;
+}
+
+.status-label{
+  font-size:12px;
+  color:#7a8191;
+  margin-bottom:6px;
+}
+
+.status-value{
+  font-size:18px;
+  font-weight:700;
+  color:#2f3440;
+}
+
+#mood{
+  color:#ff8a3d;
 }
 
 #hearts{
   font-size:20px;
   color:#ff5a7a;
-  margin-bottom:6px;
+  letter-spacing:2px;
 }
 
-#level,
-#personality{
-  margin-top:4px;
-  color:#444;
+#bottom-panel{
+  margin-top:22px;
+  background:white;
+  border:1px solid #e8e8e8;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  padding:18px;
+  text-align:center;
 }
 
 .actions{
-  margin-top:18px;
+  margin-bottom:16px;
 }
 
 button{
@@ -83,7 +138,7 @@ button{
   color:white;
   border:none;
   padding:10px 14px;
-  border-radius:8px;
+  border-radius:10px;
   cursor:pointer;
   margin:0 4px;
   font-size:14px;
@@ -94,14 +149,18 @@ button:hover{
 }
 
 #chat-wrap{
-  margin-top:18px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
 }
 
 #chatInput{
-  width:220px;
+  width:280px;
   padding:10px 12px;
   border:1px solid #d9dce3;
-  border-radius:8px;
+  border-radius:10px;
   outline:none;
   font-size:14px;
   background:white;
@@ -113,67 +172,99 @@ button:hover{
 }
 
 .hint{
-  margin-top:8px;
+  margin-top:10px;
   font-size:12px;
   color:#888;
+}
+
+@media (max-width: 720px){
+  #top-layout{
+    flex-direction:column;
+    align-items:center;
+  }
+
+  #status-panel{
+    width:300px;
+  }
+
+  #chatInput{
+    width:100%;
+    max-width:300px;
+  }
 }
 </style>
 </head>
 <body>
 
-<h2>Dot Cat</h2>
+<div id="app">
+  <h2>Dot Cat</h2>
 
-<div id="game-container">
-  <canvas id="game" width="300" height="300"></canvas>
-  <div id="bubble"></div>
-</div>
+  <div id="top-layout">
+    <div id="game-container">
+      <canvas id="game" width="300" height="300"></canvas>
+      <div id="bubble"></div>
+    </div>
 
-<div id="ui">
-  <div id="hearts"></div>
-  <div id="level"></div>
-  <div id="personality"></div>
-</div>
+    <div id="status-panel">
+      <div class="status-title">고양이 상태</div>
 
-<div class="actions">
-  <button onclick="snack()">Snack</button>
-  <button onclick="talk()">고양이 말하기</button>
-</div>
+      <div class="status-card">
+        <div class="status-label">호감도</div>
+        <div id="hearts" class="status-value">♥♥♥</div>
+      </div>
 
-<div id="chat-wrap">
-  <input id="chatInput" placeholder="고양이에게 말하기" maxlength="100">
-  <button onclick="chat()">보내기</button>
-  <div class="hint">말풍선은 최소 2초 유지돼요</div>
+      <div class="status-card">
+        <div class="status-label">레벨</div>
+        <div id="level" class="status-value">Lv.1</div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-label">성격</div>
+        <div id="personality" class="status-value">friendly</div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-label">기분</div>
+        <div id="mood" class="status-value">보통</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom-panel">
+    <div class="actions">
+      <button onclick="snack()">Snack</button>
+      <button onclick="talk()">고양이 말하기</button>
+    </div>
+
+    <div id="chat-wrap">
+      <input id="chatInput" placeholder="고양이에게 말하기" maxlength="100">
+      <button onclick="chat()">보내기</button>
+    </div>
+
+    <div class="hint">말풍선은 최소 2초 유지돼요</div>
+  </div>
 </div>
 
 <script src="/static/game.js"></script>
 
 <script>
 let bubbleTimer = null
-let bubbleShownAt = 0
 const MIN_BUBBLE_MS = 2000
 
 function showBubble(t){
   const b = document.getElementById("bubble")
   const text = (t || "").trim()
-
   if(!text) return
 
   b.innerText = text
   b.style.display = "block"
-  bubbleShownAt = Date.now()
 
   if(bubbleTimer){
     clearTimeout(bubbleTimer)
-    bubbleTimer = null
   }
 
   bubbleTimer = setTimeout(() => {
-    const elapsed = Date.now() - bubbleShownAt
-    const remain = Math.max(0, MIN_BUBBLE_MS - elapsed)
-
-    setTimeout(() => {
-      b.style.display = "none"
-    }, remain)
+    b.style.display = "none"
   }, MIN_BUBBLE_MS)
 }
 
@@ -190,7 +281,6 @@ async function talk(){
 async function chat(){
   const i = document.getElementById("chatInput")
   const text = i.value.trim()
-
   if(!text) return
 
   i.disabled = true
@@ -210,9 +300,7 @@ async function chat(){
 }
 
 document.getElementById("chatInput").addEventListener("keydown", e => {
-  if(e.key === "Enter"){
-    chat()
-  }
+  if(e.key === "Enter") chat()
 })
 </script>
 
