@@ -22,8 +22,6 @@ last_chat = 0
 state_start = time.time()
 
 personality = random.choice(["tsundere", "lazy", "friendly"])
-
-# 대화 히스토리는 user/assistant만 저장
 messages = []
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -37,34 +35,25 @@ def get_cat_system_prompt() -> str:
     }.get(personality, "귀엽고 장난기 많다.")
 
     return f"""
-너는 사람이 아니라 진짜 집고양이다.
-반드시 고양이처럼만 말해야 한다.
-사람처럼 설명하거나 AI처럼 행동하면 안 된다.
-항상 짧고 귀엽게 대답한다.
-최대 15자 이내로 답한다.
-말투에는 '먀옹', '냐', '냥', '골골', '꾹꾹' 같은 고양이 느낌을 자연스럽게 섞는다.
-질문을 받아도 설명문 대신 고양이 반응으로 답한다.
-코드, 장문 설명, 목록, 해설을 하지 마라.
-성격은 다음과 같다: {style}
+너는 진짜 집고양이다.
+항상 고양이처럼 짧게 말한다.
+최대 10자 이내로 답한다.
+사람처럼 설명하지 마라.
+'먀옹', '냥', '냐', '골골' 같은 말투를 쓴다.
+성격: {style}
 """.strip()
 
 
 def build_chat_messages(user_text: str = ""):
-    dynamic_state = f"""
-현재 상태: {state}
-호감도: {affection}
-레벨: {level}
-성격: {personality}
-""".strip()
+    dynamic_state = f"현재 상태:{state}, 호감도:{affection}, 레벨:{level}, 성격:{personality}"
 
     prompt_messages = [
         {"role": "system", "content": get_cat_system_prompt()},
         {"role": "system", "content": dynamic_state},
     ]
 
-    # 최근 대화만 유지
-    recent = messages[-6:]
-    prompt_messages.extend(recent)
+    # 최근 히스토리 최소화: 속도에 가장 중요
+    prompt_messages.extend(messages[-4:])
 
     if user_text:
         prompt_messages.append({"role": "user", "content": user_text})
@@ -75,19 +64,14 @@ def build_chat_messages(user_text: str = ""):
 def clamp_cat_reply(text: str) -> str:
     text = (text or "").strip().replace("\n", " ")
     if not text:
-        return random.choice(["먀옹", "냐앙", "골골", "냥!", "먀아"])
+        return random.choice(["먀옹", "냥!", "골골", "냐앙"])
 
-    # 너무 사람 같은 답변 방지
-    blocked = [
-        "저는", "AI", "모델", "설명", "도와", "가능", "죄송", "알겠습니다",
-        "사용자", "시스템", "프롬프트", "답변", "OpenAI"
-    ]
-    if any(word in text for word in blocked):
-        return random.choice(["먀옹?", "냥냥!", "골골...", "냐아", "꾹꾹"])
+    if len(text) > 10:
+        text = text[:10].rstrip()
 
-    # 15자 제한
-    if len(text) > 15:
-        text = text[:15].rstrip()
+    banned = ["저는", "AI", "설명", "도와", "죄송", "사용자", "시스템"]
+    if any(x in text for x in banned):
+        return random.choice(["먀옹?", "냥냥!", "골골...", "냐아"])
 
     return text
 
@@ -100,19 +84,19 @@ def call_ollama_chat(prompt_messages):
                 "model": MODEL_NAME,
                 "messages": prompt_messages,
                 "stream": False,
-                "keep_alive": "1h",
+                "keep_alive": "4h",
                 "options": {
-                    "num_predict": 12,
-                    "temperature": 0.8,
-                    "top_k": 20,
-                    "repeat_penalty": 1.1
+                    "num_predict": 8,
+                    "num_ctx": 512,
+                    "temperature": 0.7,
+                    "top_k": 10,
+                    "repeat_penalty": 1.05
                 }
             },
-            timeout=30
+            timeout=15
         )
         res.raise_for_status()
-        data = res.json()
-        return data
+        return res.json()
     except Exception:
         return {"message": {"content": random.choice(["먀옹!", "냐앙", "골골...", "냥?"])}} 
 
@@ -128,11 +112,14 @@ def warmup():
                     {"role": "system", "content": get_cat_system_prompt()},
                     {"role": "user", "content": "안녕"}
                 ],
-                "keep_alive": "1h",
                 "stream": False,
-                "options": {"num_predict": 5}
+                "keep_alive": "4h",
+                "options": {
+                    "num_predict": 4,
+                    "num_ctx": 512
+                }
             },
-            timeout=15
+            timeout=10
         )
     except Exception:
         pass
@@ -164,18 +151,14 @@ def cat(q: str = ""):
     prompt_messages = build_chat_messages(q)
     data = call_ollama_chat(prompt_messages)
 
-    if "message" not in data:
-        return {"error": data}
-
-    msg = clamp_cat_reply(data["message"]["content"])
+    msg = clamp_cat_reply(data.get("message", {}).get("content", ""))
 
     if q:
         messages.append({"role": "user", "content": q})
     messages.append({"role": "assistant", "content": msg})
 
-    # 히스토리 너무 길어지지 않게 제한
-    if len(messages) > 20:
-        messages = messages[-20:]
+    if len(messages) > 12:
+        messages = messages[-12:]
 
     return {
         "message": msg,
