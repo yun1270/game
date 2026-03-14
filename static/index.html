@@ -6,59 +6,117 @@
 <title>Dot Cat</title>
 
 <style>
-
 body{
-font-family:sans-serif;
-background:#f5f6fa;
-text-align:center;
-margin:40px;
+  font-family:sans-serif;
+  background:#f5f6fa;
+  text-align:center;
+  margin:40px;
+}
+
+h2{
+  margin-bottom:18px;
 }
 
 #game-container{
-position:relative;
-width:300px;
-margin:auto;
+  position:relative;
+  width:300px;
+  margin:auto;
 }
 
 canvas{
-border-radius:12px;
-border:1px solid #ddd;
-background:white;
+  border-radius:12px;
+  border:1px solid #ddd;
+  background:white;
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
 }
 
 #bubble{
-position:absolute;
-top:10px;
-left:50%;
-transform:translateX(-50%);
-background:white;
-padding:8px 12px;
-border-radius:12px;
-display:none;
+  position:absolute;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:white;
+  padding:10px 14px;
+  border-radius:14px;
+  display:none;
+  min-width:80px;
+  max-width:220px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.12);
+  border:1px solid #e8e8e8;
+  z-index:10;
+  word-break:break-word;
+}
+
+#bubble::after{
+  content:"";
+  position:absolute;
+  bottom:-8px;
+  left:50%;
+  transform:translateX(-50%);
+  border-width:8px 8px 0 8px;
+  border-style:solid;
+  border-color:white transparent transparent transparent;
 }
 
 #ui{
-margin-top:12px;
+  margin-top:14px;
 }
 
 #hearts{
-font-size:20px;
-color:#ff5a7a;
+  font-size:20px;
+  color:#ff5a7a;
+  margin-bottom:6px;
+}
+
+#level,
+#personality{
+  margin-top:4px;
+  color:#444;
+}
+
+.actions{
+  margin-top:18px;
 }
 
 button{
-background:#4f7cff;
-color:white;
-border:none;
-padding:10px 14px;
-border-radius:8px;
-cursor:pointer;
+  background:#4f7cff;
+  color:white;
+  border:none;
+  padding:10px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  margin:0 4px;
+  font-size:14px;
 }
 
 button:hover{
-background:#3d66d6;
+  background:#3d66d6;
 }
 
+#chat-wrap{
+  margin-top:18px;
+}
+
+#chatInput{
+  width:220px;
+  padding:10px 12px;
+  border:1px solid #d9dce3;
+  border-radius:8px;
+  outline:none;
+  font-size:14px;
+  background:white;
+}
+
+#chatInput:focus{
+  border-color:#4f7cff;
+  box-shadow:0 0 0 3px rgba(79,124,255,0.12);
+}
+
+.hint{
+  margin-top:8px;
+  font-size:12px;
+  color:#888;
+}
 </style>
 </head>
 <body>
@@ -66,58 +124,96 @@ background:#3d66d6;
 <h2>Dot Cat</h2>
 
 <div id="game-container">
-<canvas id="game" width="300" height="300"></canvas>
-<div id="bubble"></div>
+  <canvas id="game" width="300" height="300"></canvas>
+  <div id="bubble"></div>
 </div>
 
 <div id="ui">
-<div id="hearts"></div>
-<div id="level"></div>
-<div id="personality"></div>
+  <div id="hearts"></div>
+  <div id="level"></div>
+  <div id="personality"></div>
 </div>
 
-<br>
+<div class="actions">
+  <button onclick="snack()">Snack</button>
+  <button onclick="talk()">고양이 말하기</button>
+</div>
 
-<button onclick="snack()">Snack</button>
-<button onclick="talk()">고양이 말하기</button>
-
-<br><br>
-
-<input id="chatInput" placeholder="고양이에게 말하기">
-<button onclick="chat()">보내기</button>
+<div id="chat-wrap">
+  <input id="chatInput" placeholder="고양이에게 말하기" maxlength="100">
+  <button onclick="chat()">보내기</button>
+  <div class="hint">말풍선은 최소 2초 유지돼요</div>
+</div>
 
 <script src="/static/game.js"></script>
 
 <script>
+let bubbleTimer = null
+let bubbleShownAt = 0
+const MIN_BUBBLE_MS = 2000
 
 function showBubble(t){
-const b=document.getElementById("bubble")
-b.innerText=t
-b.style.display="block"
-setTimeout(()=>{b.style.display="none"},5000)
+  const b = document.getElementById("bubble")
+  const text = (t || "").trim()
+
+  if(!text) return
+
+  b.innerText = text
+  b.style.display = "block"
+  bubbleShownAt = Date.now()
+
+  if(bubbleTimer){
+    clearTimeout(bubbleTimer)
+    bubbleTimer = null
+  }
+
+  bubbleTimer = setTimeout(() => {
+    const elapsed = Date.now() - bubbleShownAt
+    const remain = Math.max(0, MIN_BUBBLE_MS - elapsed)
+
+    setTimeout(() => {
+      b.style.display = "none"
+    }, remain)
+  }, MIN_BUBBLE_MS)
 }
 
 async function talk(){
-const res=await fetch("/cat")
-const d=await res.json()
-showBubble(d.message)
+  try{
+    const res = await fetch("/cat")
+    const d = await res.json()
+    if(d.message) showBubble(d.message)
+  }catch(e){
+    showBubble("먀옹?")
+  }
 }
 
 async function chat(){
-const i=document.getElementById("chatInput")
-const text=i.value.trim()
-if(!text) return
-const res=await fetch("/cat?q="+encodeURIComponent(text))
-const d=await res.json()
-showBubble(d.message)
-i.value=""
+  const i = document.getElementById("chatInput")
+  const text = i.value.trim()
+
+  if(!text) return
+
+  i.disabled = true
+
+  try{
+    const res = await fetch("/cat?q=" + encodeURIComponent(text))
+    const d = await res.json()
+    if(d.message) showBubble(d.message)
+    else showBubble("냥?")
+    i.value = ""
+  }catch(e){
+    showBubble("먀옹!")
+  }finally{
+    i.disabled = false
+    i.focus()
+  }
 }
 
-document.getElementById("chatInput")
-.addEventListener("keydown",e=>{
-if(e.key==="Enter") chat()
+document.getElementById("chatInput").addEventListener("keydown", e => {
+  if(e.key === "Enter"){
+    chat()
+  }
 })
-
 </script>
 
 </body>
