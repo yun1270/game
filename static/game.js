@@ -25,6 +25,8 @@ const catY = 50
 const catW = 150
 const catH = 150
 
+window.catBusy = false
+
 function getCurrentImage() {
   return images[state] || images.idle
 }
@@ -74,8 +76,9 @@ async function update() {
 }
 
 canvas.addEventListener("click", async (e) => {
-  const rect = canvas.getBoundingClientRect()
+  if (window.catBusy) return
 
+  const rect = canvas.getBoundingClientRect()
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
 
@@ -86,20 +89,48 @@ canvas.addEventListener("click", async (e) => {
     y < catY + catH
   ) {
     try {
+      window.catBusy = true
+      document.getElementById("chatInput").disabled = true
+      document.getElementById("sendButton").disabled = true
+      document.getElementById("snackButton").disabled = true
+      document.getElementById("busyText").innerText = "고양이를 쓰다듬는 중..."
+
       await fetch("/pet", { method: "POST" })
       await update()
     } catch (e) {
       console.error("pet failed", e)
+    } finally {
+      window.catBusy = false
+      document.getElementById("chatInput").disabled = false
+      document.getElementById("sendButton").disabled = false
+      document.getElementById("snackButton").disabled = false
+      document.getElementById("busyText").innerText = ""
+      document.getElementById("chatInput").focus()
     }
   }
 })
 
 async function snack() {
+  if (window.catBusy) return
+
   try {
+    window.catBusy = true
+    document.getElementById("chatInput").disabled = true
+    document.getElementById("sendButton").disabled = true
+    document.getElementById("snackButton").disabled = true
+    document.getElementById("busyText").innerText = "고양이가 간식 먹는 중..."
+
     await fetch("/snack", { method: "POST" })
     await update()
   } catch (e) {
     console.error("snack failed", e)
+  } finally {
+    window.catBusy = false
+    document.getElementById("chatInput").disabled = false
+    document.getElementById("sendButton").disabled = false
+    document.getElementById("snackButton").disabled = false
+    document.getElementById("busyText").innerText = ""
+    document.getElementById("chatInput").focus()
   }
 }
 
@@ -108,4 +139,8 @@ Object.values(images).forEach((img) => {
 })
 
 update()
-setInterval(update, 500)
+setInterval(() => {
+  if (!window.catBusy) {
+    update()
+  }
+}, 500)
