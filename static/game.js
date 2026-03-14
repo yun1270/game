@@ -19,7 +19,6 @@ let state = "idle"
 let affection = 50
 let level = 1
 let personality = "friendly"
-let mood = "보통"
 
 const catX = 75
 const catY = 50
@@ -34,7 +33,6 @@ function draw() {
   ctx.clearRect(0, 0, 300, 300)
 
   const img = getCurrentImage()
-
   if (img.complete) {
     ctx.drawImage(img, catX, catY, catW, catH)
   }
@@ -44,7 +42,6 @@ function updateUI() {
   const heartsEl = document.getElementById("hearts")
   const levelEl = document.getElementById("level")
   const personalityEl = document.getElementById("personality")
-  const moodEl = document.getElementById("mood")
 
   let heartCount = Math.floor(affection / 20)
   heartCount = Math.max(0, Math.min(5, heartCount))
@@ -57,7 +54,6 @@ function updateUI() {
   heartsEl.innerText = hearts
   levelEl.innerText = "Lv." + level
   personalityEl.innerText = personality
-  moodEl.innerText = mood
 }
 
 async function update() {
@@ -69,7 +65,6 @@ async function update() {
     affection = data.affection ?? 50
     level = data.level ?? 1
     personality = data.personality || "friendly"
-    mood = data.mood || "보통"
 
     draw()
     updateUI()

@@ -36,10 +36,11 @@ def get_cat_system_prompt() -> str:
 
     return f"""
 너는 진짜 집고양이다.
-항상 고양이처럼 짧게 말한다.
-최대 10자 이내로 답한다.
-사람처럼 설명하지 마라.
-'먀옹', '냥', '냐', '골골' 같은 말투를 쓴다.
+항상 고양이처럼 짧고 귀엽게 말한다.
+답변은 최대 24자 이내로 한다.
+사람처럼 길게 설명하지 마라.
+가능하면 자연스러운 한마디로 답한다.
+'먀옹', '냥', '냐', '골골', '꾹꾹' 같은 고양이 말투를 자연스럽게 섞는다.
 성격: {style}
 """.strip()
 
@@ -52,8 +53,8 @@ def build_chat_messages(user_text: str = ""):
         {"role": "system", "content": dynamic_state},
     ]
 
-    # 최근 히스토리 최소화: 속도에 가장 중요
-    prompt_messages.extend(messages[-4:])
+    # 너무 짧게 줄이면 맥락이 끊겨 보여서 6개 정도 유지
+    prompt_messages.extend(messages[-6:])
 
     if user_text:
         prompt_messages.append({"role": "user", "content": user_text})
@@ -63,15 +64,23 @@ def build_chat_messages(user_text: str = ""):
 
 def clamp_cat_reply(text: str) -> str:
     text = (text or "").strip().replace("\n", " ")
+    text = " ".join(text.split())
+
     if not text:
-        return random.choice(["먀옹", "냥!", "골골", "냐앙"])
+        return random.choice(["먀옹", "냥!", "골골골", "냐앙~"])
 
-    if len(text) > 10:
-        text = text[:10].rstrip()
-
-    banned = ["저는", "AI", "설명", "도와", "죄송", "사용자", "시스템"]
+    banned = ["저는", "AI", "설명", "도와", "죄송", "사용자", "시스템", "모델"]
     if any(x in text for x in banned):
-        return random.choice(["먀옹?", "냥냥!", "골골...", "냐아"])
+        return random.choice(["먀옹?", "냥냥!", "골골...", "냐아~"])
+
+    # 너무 길면 잘라내되 이전처럼 10자로 자르진 않음
+    if len(text) > 24:
+        text = text[:24].rstrip()
+
+    # 너무 밋밋하면 고양이 느낌 보강
+    cat_words = ["먀옹", "냥", "냐", "골골", "꾹꾹"]
+    if not any(word in text for word in cat_words):
+        text = text + random.choice([" 냥", " 먀옹", " 냐"])
 
     return text
 
@@ -86,19 +95,19 @@ def call_ollama_chat(prompt_messages):
                 "stream": False,
                 "keep_alive": "4h",
                 "options": {
-                    "num_predict": 8,
-                    "num_ctx": 512,
-                    "temperature": 0.7,
-                    "top_k": 10,
+                    "num_predict": 16,
+                    "num_ctx": 768,
+                    "temperature": 0.8,
+                    "top_k": 20,
                     "repeat_penalty": 1.05
                 }
             },
-            timeout=15
+            timeout=20
         )
         res.raise_for_status()
         return res.json()
     except Exception:
-        return {"message": {"content": random.choice(["먀옹!", "냐앙", "골골...", "냥?"])}} 
+        return {"message": {"content": random.choice(["먀옹!", "냐앙~", "골골...", "냥?"])}} 
 
 
 @app.on_event("startup")
@@ -115,8 +124,8 @@ def warmup():
                 "stream": False,
                 "keep_alive": "4h",
                 "options": {
-                    "num_predict": 4,
-                    "num_ctx": 512
+                    "num_predict": 8,
+                    "num_ctx": 768
                 }
             },
             timeout=10
@@ -157,8 +166,8 @@ def cat(q: str = ""):
         messages.append({"role": "user", "content": q})
     messages.append({"role": "assistant", "content": msg})
 
-    if len(messages) > 12:
-        messages = messages[-12:]
+    if len(messages) > 16:
+        messages = messages[-16:]
 
     return {
         "message": msg,
