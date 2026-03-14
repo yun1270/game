@@ -1,10 +1,25 @@
-version: "3"
+version: "3.9"
 
 services:
-  cat:
+
+  game-cat:
     build: .
+    container_name: game-cat
     ports:
       - "8000:8000"
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
     volumes:
-      - .:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

@@ -7,13 +7,10 @@ import time
 
 app = FastAPI()
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
-
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 state = "idle"
 snacks = 0
-
 last_action = time.time()
-last_chat = 0
 state_start = time.time()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -23,25 +20,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def root():
     return FileResponse("static/index.html")
 
-
 @app.get("/cat")
-def cat_talk(q: str = ""):
-    global last_action, last_chat
+def cat_talk():
 
-    last_action = time.time()
-    last_chat = time.time()
-
-    if q:
-        prompt = f"""
-너는 귀여운 집고양이다.
-사람의 말에 짧게 대답한다.
-대사는 최대 15자.
-
-사람: {q}
-고양이:
-"""
-    else:
-        prompt = """
+    prompt = """
 너는 귀여운 집고양이다.
 플레이어에게 15자 이내로 한마디 한다.
 """
@@ -58,10 +40,11 @@ def cat_talk(q: str = ""):
     data = res.json()
 
     if "response" not in data:
-        return {"error": data}
+        return {
+            "error": data
+        }
 
-    return {"message": data["response"].strip()}
-
+    return {"message": data["response"]}
 
 @app.get("/state")
 def get_state():
@@ -72,11 +55,6 @@ def get_state():
     # ear / snack 상태는 1초 유지
     if state in ["ear", "snack"] and now - state_start > 1:
         state = "idle"
-
-    # 최근 15초 내 대화 중이면 sleep 금지
-    if now - last_chat < 15:
-        if state == "sleep":
-            state = "idle"
 
     # 60초 방치 → sleep
     if state == "idle" and now - last_action > 60:
@@ -106,7 +84,6 @@ def snack():
 
     snacks += 1
     state = "snack"
-
     last_action = time.time()
     state_start = time.time()
 
